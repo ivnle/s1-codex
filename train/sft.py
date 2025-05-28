@@ -48,6 +48,11 @@ class TrainingConfig:
     lora_target_modules: Optional[list[str]] = field(
         default=None, metadata={"help": "List of module names to apply LORA to (e.g., 'q_proj,v_proj'). Defaults will be used if None."}
     )
+    checkpoint_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Directory in which to save checkpoints / final model. "
+                          "If provided, overrides the Trainer `output_dir`."},
+    )
     log_dataset_stats: bool = field(
         default=False,
         metadata={"help": "If true, log basic token-length statistics of the dataset before training."},
@@ -63,6 +68,13 @@ def train():
     # parsing input
     parser = transformers.HfArgumentParser((TrainingConfig, trl.SFTConfig))
     config, args = parser.parse_args_into_dataclasses()
+    # ------------------------------------------------------------------
+    # Resolve final checkpoint directory (defaults to Trainer's output_dir)
+    # ------------------------------------------------------------------
+    checkpoint_dir = config.checkpoint_dir or args.output_dir
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    # make sure the Trainer itself also points there
+    args.output_dir = checkpoint_dir
     log_config = {**asdict(config), **asdict(args)}
     logging.info(f"Training config: {log_config}")
 
@@ -245,8 +257,8 @@ def train():
 
     logging.info(f"Model parameter dtype: {next(trainer.model.parameters()).dtype}")
     trainer.train()
-    trainer.save_model(output_dir=args.output_dir)
-    tokenizer.save_pretrained(args.output_dir)
+    trainer.save_model(output_dir=checkpoint_dir)
+    tokenizer.save_pretrained(checkpoint_dir)
     trainer.accelerator.wait_for_everyone()
 
 

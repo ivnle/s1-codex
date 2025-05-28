@@ -80,6 +80,9 @@ repo_name="${param_tag}_${peft_tag}_${dist_backend}_${uid}"
 # Final output directory (also becomes HF repo name when push_to_hub=true)
 output_dir="ckpts/${repo_name}"
 
+# -------- Optional explicit checkpoint directory --------
+checkpoint_dir=""          # e.g. "my_ckpts/run42" ; leave empty to use default
+
 # If the user requests single-GPU, override world-size
 if [ "${dist_backend}" = "single" ]; then
   gpu_count=1
@@ -120,6 +123,11 @@ cmd=(torchrun --nproc-per-node ${gpu_count} --master_port 12345 train/sft.py \
 # Add FSDP flags only when requested
 if [ "${dist_backend}" = "fsdp" ]; then
   cmd+=(--fsdp="${fsdp_policy}" --fsdp_config="${fsdp_config_file}")
+fi
+
+# Add checkpoint_dir flag if set
+if [ -n "${checkpoint_dir}" ]; then
+  cmd+=(--checkpoint_dir="${checkpoint_dir}")
 fi
 
 # Launch

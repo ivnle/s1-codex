@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field, asdict
 from typing import Optional
+import itertools
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 import logging
@@ -25,6 +26,10 @@ class TrainingConfig:
     lora_dropout: float = field(default=0.05, metadata={"help": "LORA dropout."})
     lora_target_modules: Optional[list[str]] = field(
         default=None, metadata={"help": "List of module names to apply LORA to (e.g., 'q_proj,v_proj'). Defaults will be used if None."}
+    )
+    log_dataset_stats: bool = field(
+        default=False,
+        metadata={"help": "If true, log basic token-length statistics of the dataset before training."},
     )
 
     def __post_init__(self):
@@ -78,6 +83,61 @@ def train():
     )
     args.dataset_text_field = 'text'
     args.max_seq_length = config.block_size
+
+    # ------------------------------------------------------------------
+    # (Optional) dataset statistics
+    # ------------------------------------------------------------------
+    if config.log_dataset_stats:
+        logging.info("Computing dataset token statistics ...")
+        text_field = args.dataset_text_field  # typically "text"
+
+        def _example_len(ex):
+            # If already tokenized, use it; otherwise tokenize now.
+            if "input_ids" in ex and isinstance(ex["input_ids"], (list, tuple)):
+                return len(ex["input_ids"])
+            return len(
+                tokenizer(
+                    ex[text_field],
+                    add_special_tokens=False,
+                    return_attention_mask=False,
+                )["input_ids"]
+            )
+
+        train_lengths = [ _example_len(ex) for ex in dataset["train"] ]
+
+        total_examples = len(train_lengths)
+        total_tokens   = sum(train_lengths)
+        min_len        = min(train_lengths)
+        max_len        = max(train_lengths)
+        mean_len       = total_tokens / total_examples if total_examples else 0
+
+        logging.info(
+            "Train split ‖ examples: %d ‖ total tokens: %d ‖ "
+            "min: %d ‖ max: %d ‖ mean: %.2f",
+            total_examples,
+            total_tokens,
+            min_len,
+            max_len,
+            mean_len,
+        )
+
+        if "test" in dataset:
+            test_lengths = [ _example_len(ex) for ex in dataset["test"] ]
+            test_total_examples = len(test_lengths)
+            test_total_tokens   = sum(test_lengths)
+            test_min_len        = min(test_lengths)
+            test_max_len        = max(test_lengths)
+            test_mean_len       = test_total_tokens / test_total_examples if test_total_examples else 0
+
+            logging.info(
+                "Test split ‖ examples: %d ‖ total tokens: %d ‖ "
+                "min: %d ‖ max: %d ‖ mean: %.2f",
+                test_total_examples,
+                test_total_tokens,
+                test_min_len,
+                test_max_len,
+                test_mean_len,
+            )
 
     peft_config = None
     if config.use_lora:

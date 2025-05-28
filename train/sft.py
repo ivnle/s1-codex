@@ -124,6 +124,7 @@ def train():
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
 
+    logging.info(f"Model parameter dtype: {next(trainer.model.parameters()).dtype}")
     trainer.train()
     trainer.save_model(output_dir=args.output_dir)
     tokenizer.save_pretrained(args.output_dir)

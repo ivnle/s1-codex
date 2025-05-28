@@ -84,7 +84,8 @@ def train():
         target_modules = config.lora_target_modules
         if target_modules is None:
             if "Qwen" in config.model_name:
-                target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+                # target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+                target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"]                
             elif "Llama" in config.model_name:
                 target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"]
             else:

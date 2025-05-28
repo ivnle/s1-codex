@@ -13,7 +13,7 @@ max_steps=-1
 # gpu_count=$(nvidia-smi -L | wc -l)
 gpu_count=1
 push_to_hub=false
-cache_dir="./.cache" # Define the cache directory
+cache_dir="/trunk/model-hub" # Define the cache directory
 
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \

@@ -13,6 +13,7 @@ max_steps=-1
 # gpu_count=$(nvidia-smi -L | wc -l)
 gpu_count=1
 push_to_hub=false
+cache_dir="./.cache" # Define the cache directory
 
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \
@@ -23,6 +24,7 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --num_train_epochs=${epochs} \
     --train_file_path="simplescaling/s1K_tokenized" \
     --model_name=${base_model} \
+    --cache_dir=${cache_dir} \
     --warmup_ratio=0.05 \
     --fsdp="full_shard auto_wrap" \
     --fsdp_config="train/fsdp_config_qwen.json" \

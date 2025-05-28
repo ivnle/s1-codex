@@ -24,6 +24,7 @@ from datasets import load_dataset, concatenate_datasets, DatasetDict
 import transformers
 import trl
 from peft import LoraConfig
+import numpy as np              # NEW
 
 @dataclass
 class TrainingConfig:
@@ -135,6 +136,13 @@ def train():
             mean_len,
         )
 
+        # ---------- NEW: histogram for train split ----------
+        # 10 automatically-chosen bins; change "auto" or bin count as desired.
+        train_hist_counts, train_hist_edges = np.histogram(train_lengths, bins="auto")
+        logging.info("Train token-length histogram (bin_start – bin_end : count)")
+        for left, right, c in zip(train_hist_edges[:-1], train_hist_edges[1:], train_hist_counts):
+            logging.info("  %5d – %5d : %d", int(left), int(right), int(c))
+
         if "test" in dataset:
             test_lengths = [ _example_len(ex) for ex in dataset["test"] ]
             test_total_examples = len(test_lengths)
@@ -152,6 +160,12 @@ def train():
                 test_max_len,
                 test_mean_len,
             )
+
+            # ---------- NEW: histogram for test split ----------
+            test_hist_counts, test_hist_edges = np.histogram(test_lengths, bins="auto")
+            logging.info("Test token-length histogram (bin_start – bin_end : count)")
+            for left, right, c in zip(test_hist_edges[:-1], test_hist_edges[1:], test_hist_counts):
+                logging.info("  %5d – %5d : %d", int(left), int(right), int(c))
 
     peft_config = None
     if config.use_lora:

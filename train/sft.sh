@@ -46,40 +46,61 @@ if [ "${use_qlora}" = true ]; then
     use_lora=true
 fi
 
-torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
-    train/sft.py \
-    --block_size=${block_size} \
-    --per_device_train_batch_size=${micro_batch_size} \
-    --per_device_eval_batch_size=${micro_batch_size} \
-    --gradient_accumulation_steps=${gradient_accumulation_steps} \
-    --num_train_epochs=${epochs} \
-    --train_file_path="simplescaling/s1K_tokenized" \
-    --model_name=${base_model} \
-    --cache_dir=${cache_dir} \
-    --wandb_project=${wandb_project} \
-    --wandb_entity=${wandb_entity} \
-    --warmup_ratio=0.05 \
-    --fsdp="full_shard auto_wrap" \
-    --fsdp_config="train/fsdp_config_qwen.json" \
-    --bf16=True \
-    --eval_strategy="no" \
-    --logging_steps=${logging_steps} \
-    --save_strategy="no" \
-    --lr_scheduler_type="cosine" \
-    --learning_rate=${lr} \
-    --weight_decay=${weight_decay} \
-    --adam_beta1=0.9 \
-    --adam_beta2=0.95 \
-    --output_dir="ckpts/s1-${uid}" \
-    --push_to_hub=${push_to_hub} \
-    --save_only_model=True \
-    --use_lora=${use_lora} \
-    --lora_r=${lora_r} \
-    --lora_alpha=${lora_alpha} \
-    --lora_dropout=${lora_dropout} \
-    --use_qlora=${use_qlora} \
-    --qlora_compute_dtype=${qlora_compute_dtype} \
-    --log_dataset_stats=${log_dataset_stats}
+# ---------------- Distributed backend -----------------
+dist_backend="ddp"                      # "ddp" (default), "fsdp", or "single"
+fsdp_policy="full_shard auto_wrap"      # Used only when dist_backend="fsdp"
+fsdp_config_file="train/fsdp_config_qwen.json"
+
+# QLoRA is not compatible with FSDP → force DDP
+if [ "${use_qlora}" = true ] && [ "${dist_backend}" = "fsdp" ]; then
+  echo "[WARN] QLoRA cannot be combined with FSDP; falling back to DDP." >&2
+  dist_backend="ddp"
+fi
+
+# If the user requests single-GPU, override world-size
+if [ "${dist_backend}" = "single" ]; then
+  gpu_count=1
+fi
+
+cmd=(torchrun --nproc-per-node ${gpu_count} --master_port 12345 train/sft.py \
+     --block_size=${block_size} \
+     --per_device_train_batch_size=${micro_batch_size} \
+     --per_device_eval_batch_size=${micro_batch_size} \
+     --gradient_accumulation_steps=${gradient_accumulation_steps} \
+     --num_train_epochs=${epochs} \
+     --train_file_path="simplescaling/s1K_tokenized" \
+     --model_name=${base_model} \
+     --cache_dir=${cache_dir} \
+     --wandb_project=${wandb_project} \
+     --wandb_entity=${wandb_entity} \
+     --warmup_ratio=0.05 \
+     --bf16=True \
+     --eval_strategy="no" \
+     --logging_steps=${logging_steps} \
+     --save_strategy="no" \
+     --lr_scheduler_type="cosine" \
+     --learning_rate=${lr} \
+     --weight_decay=${weight_decay} \
+     --adam_beta1=0.9 \
+     --adam_beta2=0.95 \
+     --output_dir="ckpts/s1-${uid}" \
+     --push_to_hub=${push_to_hub} \
+     --save_only_model=True \
+     --use_lora=${use_lora} \
+     --lora_r=${lora_r} \
+     --lora_alpha=${lora_alpha} \
+     --lora_dropout=${lora_dropout} \
+     --use_qlora=${use_qlora} \
+     --qlora_compute_dtype=${qlora_compute_dtype} \
+     --log_dataset_stats=${log_dataset_stats})
+
+# Add FSDP flags only when requested
+if [ "${dist_backend}" = "fsdp" ]; then
+  cmd+=(--fsdp="${fsdp_policy}" --fsdp_config="${fsdp_config_file}")
+fi
+
+# Launch
+"${cmd[@]}"
     # To specify target modules from shell, uncomment and add:
     # --lora_target_modules="${lora_target_modules_str}" \
     # --gradient_checkpointing=True \ Enable gradient checkpointing for efficient memory usage with 8 H100 GPUs.

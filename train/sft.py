@@ -8,6 +8,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 from datasets import load_dataset, concatenate_datasets, DatasetDict
 import transformers
 import trl
+from peft import LoraConfig
 
 @dataclass
 class TrainingConfig:
@@ -18,6 +19,13 @@ class TrainingConfig:
     train_file_path: Optional[str] = field(default='simplescaling/s1K_tokenized')
     cache_dir: Optional[str] = field(default=None)
     dagger: bool = field(default=False)
+    use_lora: bool = field(default=False, metadata={"help": "Whether to use LORA."})
+    lora_r: int = field(default=8, metadata={"help": "LORA attention dimension."})
+    lora_alpha: int = field(default=16, metadata={"help": "LORA alpha."})
+    lora_dropout: float = field(default=0.05, metadata={"help": "LORA dropout."})
+    lora_target_modules: Optional[list[str]] = field(
+        default=None, metadata={"help": "List of module names to apply LORA to (e.g., 'q_proj,v_proj'). Defaults will be used if None."}
+    )
 
     def __post_init__(self):
         if self.wandb_project:
@@ -70,12 +78,38 @@ def train():
     )
     args.dataset_text_field = 'text'
     args.max_seq_length = config.block_size
+
+    peft_config = None
+    if config.use_lora:
+        target_modules = config.lora_target_modules
+        if target_modules is None:
+            if "Qwen" in config.model_name:
+                target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+            elif "Llama" in config.model_name:
+                target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"]
+            else:
+                logging.warning(
+                    "LoRA target modules not specified and no default for model type. "
+                    "LoRA might not be effective. You can specify target_modules like --lora_target_modules 'q_proj,v_proj'"
+                )
+                target_modules = []
+
+        peft_config = LoraConfig(
+            r=config.lora_r,
+            lora_alpha=config.lora_alpha,
+            lora_dropout=config.lora_dropout,
+            target_modules=target_modules,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+
     trainer = trl.SFTTrainer(
         model,
         train_dataset=dataset['train'],
         eval_dataset=dataset['test'] if 'test' in dataset else dataset['train'],
         args=args,
-        data_collator=collator
+        data_collator=collator,
+        peft_config=peft_config,
     )
 
     trainer.train()

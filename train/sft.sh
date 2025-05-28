@@ -20,6 +20,14 @@ cache_dir="/trunk/model-hub" # Define the cache directory
 wandb_project="s1-codex" # Define your W&B project
 wandb_entity="ivnle"  # Define your W&B entity (username or team)
 
+# LORA parameters
+use_lora=false # Set to true to enable LORA
+lora_r=8
+lora_alpha=16
+lora_dropout=0.05
+# Example: lora_target_modules_str="q_proj,v_proj" # Uncomment and set to override defaults in python script
+# If lora_target_modules_str is not set or empty, the script will use defaults or try to infer.
+
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \
     --block_size=32768 \
@@ -46,7 +54,13 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --adam_beta2=0.95 \
     --output_dir="ckpts/s1-${uid}" \
     --push_to_hub=${push_to_hub} \
-    --save_only_model=True
+    --save_only_model=True \
+    --use_lora=${use_lora} \
+    --lora_r=${lora_r} \
+    --lora_alpha=${lora_alpha} \
+    --lora_dropout=${lora_dropout}
+    # To specify target modules from shell, uncomment and add:
+    # --lora_target_modules="${lora_target_modules_str}" \
     # --gradient_checkpointing=True \ Enable gradient checkpointing for efficient memory usage with 8 H100 GPUs.
     # --accelerator_config='{"gradient_accumulation_kwargs": {"sync_each_batch": true}}'
 

@@ -38,6 +38,14 @@ lora_dropout=0.05
 # Example: lora_target_modules_str="q_proj,v_proj" # Uncomment and set to override defaults in python script
 # If lora_target_modules_str is not set or empty, the script will use defaults or try to infer.
 
+# ------------------------ QLoRA parameters ------------------------
+use_qlora=false                  # Set to true to activate 4-bit QLoRA
+qlora_compute_dtype="bf16"       # "bf16" or "fp16"
+# If QLoRA is enabled we must also enable LoRA adapters                                   
+if [ "${use_qlora}" = true ]; then
+    use_lora=true
+fi
+
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \
     --block_size=${block_size} \
@@ -69,6 +77,8 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --lora_r=${lora_r} \
     --lora_alpha=${lora_alpha} \
     --lora_dropout=${lora_dropout} \
+    --use_qlora=${use_qlora} \
+    --qlora_compute_dtype=${qlora_compute_dtype} \
     --log_dataset_stats=${log_dataset_stats}
     # To specify target modules from shell, uncomment and add:
     # --lora_target_modules="${lora_target_modules_str}" \

@@ -57,6 +57,29 @@ if [ "${use_qlora}" = true ] && [ "${dist_backend}" = "fsdp" ]; then
   dist_backend="ddp"
 fi
 
+# ---------- Build informative checkpoint / HuggingFace repo name ----------
+# Short model id (strip path)
+base_model_short=$(basename "${base_model}")
+
+# Parameter-count tag: grabs the first “…B” token such as 0.5B / 7B / 32B
+param_tag=$(echo "${base_model_short}" | grep -o -E '[0-9]+(\.[0-9]+)?B' | head -n1)
+[ -z "${param_tag}" ] && param_tag="unk"
+
+# PEFT tag
+if [ "${use_qlora}" = true ]; then
+  peft_tag="qlora"
+elif [ "${use_lora}" = true ]; then
+  peft_tag="lora"
+else
+  peft_tag="full"
+fi
+
+# Combine: <params>_<peft>_<backend>_<timestamp>
+repo_name="${param_tag}_${peft_tag}_${dist_backend}_${uid}"
+
+# Final output directory (also becomes HF repo name when push_to_hub=true)
+output_dir="ckpts/${repo_name}"
+
 # If the user requests single-GPU, override world-size
 if [ "${dist_backend}" = "single" ]; then
   gpu_count=1
@@ -83,7 +106,7 @@ cmd=(torchrun --nproc-per-node ${gpu_count} --master_port 12345 train/sft.py \
      --weight_decay=${weight_decay} \
      --adam_beta1=0.9 \
      --adam_beta2=0.95 \
-     --output_dir="ckpts/s1-${uid}" \
+     --output_dir="${output_dir}" \
      --push_to_hub=${push_to_hub} \
      --save_only_model=True \
      --use_lora=${use_lora} \

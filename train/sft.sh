@@ -2,7 +2,10 @@
 # {'train_runtime': 5268.8407, 'train_samples_per_second': 0.949, 'train_steps_per_second': 0.119, 'train_loss': 0.1172730620391667, 'epoch': 5.0}
 uid="$(date +%Y%m%d_%H%M%S)"
 # base_model="Qwen/Qwen2.5-32B-Instruct"
-base_model="Qwen/Qwen2.5-0.5B-Instruct"
+# base_model="Qwen/Qwen2.5-0.5B-Instruct"
+base_model="Qwen/Qwen2.5-1.5B-Instruct"
+# base_model="Qwen/Qwen2.5-3B-Instruct"
+# base_model="Qwen/Qwen2.5-7B-Instruct"
 lr=1e-5
 min_lr=0
 epochs=5
@@ -11,11 +14,11 @@ micro_batch_size=1 # -> batch_size will be 16 if 16 gpus
 gradient_accumulation_steps=1 # requires more GPU memory
 max_steps=-1
 # gpu_count=$(nvidia-smi -L | wc -l)
-gpu_count=1
+gpu_count=7
 push_to_hub=false
 cache_dir="/trunk/model-hub" # Define the cache directory
-wandb_project="my_sft_project" # Define your W&B project
-wandb_entity="my_wandb_username"  # Define your W&B entity (username or team)
+wandb_project="s1-codex" # Define your W&B project
+wandb_entity="ivnle"  # Define your W&B entity (username or team)
 
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \

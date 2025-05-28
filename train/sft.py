@@ -113,6 +113,17 @@ def train():
         peft_config=peft_config,
     )
 
+    # Log trainable parameters
+    trainable_params = 0
+    all_param = 0
+    for _, param in trainer.model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    logging.info(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
+
     trainer.train()
     trainer.save_model(output_dir=args.output_dir)
     tokenizer.save_pretrained(args.output_dir)

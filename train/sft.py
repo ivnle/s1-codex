@@ -1,4 +1,6 @@
 import os
+import torch
+from transformers import BitsAndBytesConfig          # NEW – only used when use_qlora
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 import itertools
@@ -36,6 +38,10 @@ class TrainingConfig:
     cache_dir: Optional[str] = field(default=None)
     dagger: bool = field(default=False)
     use_lora: bool = field(default=False, metadata={"help": "Whether to use LORA."})
+    use_qlora: bool = field(default=False,
+        metadata={"help": "Use QLoRA (4-bit base model + LoRA adapters) instead of full-precision base"})
+    qlora_compute_dtype: str = field(
+        default="bf16", metadata={"help": "'bf16' or 'fp16' – dtype used for 4-bit dequant compute"})
     lora_r: int = field(default=8, metadata={"help": "LORA attention dimension."})
     lora_alpha: int = field(default=16, metadata={"help": "LORA alpha."})
     lora_dropout: float = field(default=0.05, metadata={"help": "LORA dropout."})
@@ -60,17 +66,38 @@ def train():
     log_config = {**asdict(config), **asdict(args)}
     logging.info(f"Training config: {log_config}")
 
-    # loading model
-    kwargs = {}
-    if "70B" in config.model_name:
-        # Removed "low_cpu_mem_usage": True, for 70B, since by default we are in FSDP,
-        # it's more efficient to do  "cpu_ram_efficient_loading": true, in fsdp_config.json
-        kwargs = {"device_map": "auto", "torch_dtype": "auto",
-                  "attn_implementation": "flash_attention_2", "use_cache": False,
-                  "cache_dir": config.cache_dir}
+    # -------------------- MODEL LOADING --------------------
+    if config.use_qlora:
+        # 4-bit NF4 quantisation + double quant (QLoRA)
+        compute_dtype = torch.bfloat16 if config.qlora_compute_dtype.lower() == "bf16" else torch.float16
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=compute_dtype,
+        )
+        model = transformers.AutoModelForCausalLM.from_pretrained(
+            config.model_name,
+            quantization_config=bnb_config,
+            device_map="auto",
+            cache_dir=config.cache_dir,
+            trust_remote_code=True,
+        )
+        # make sure LoRA is actually enabled for QLoRA
+        config.use_lora = True
+    elif "70B" in config.model_name:
+        kwargs = {
+            "device_map": "auto",
+            "torch_dtype": "auto",
+            "attn_implementation": "flash_attention_2",
+            "use_cache": False,
+            "cache_dir": config.cache_dir,
+        }
         model = transformers.AutoModelForCausalLM.from_pretrained(config.model_name, **kwargs)
     else:
-        model = transformers.AutoModelForCausalLM.from_pretrained(config.model_name, cache_dir=config.cache_dir)
+        model = transformers.AutoModelForCausalLM.from_pretrained(
+            config.model_name, cache_dir=config.cache_dir
+        )
 
     dataset = load_dataset(config.train_file_path)
 

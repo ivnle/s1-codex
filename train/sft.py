@@ -13,15 +13,17 @@ import trl
 class TrainingConfig:
     model_name: str = field(default="Qwen/Qwen2.5-32B-Instruct")
     block_size: int = field(default=32768)
-    wandb_project: Optional[str] = field(default="s1")
-    wandb_entity: Optional[str] = field(default="hashimoto-group")
+    wandb_project: Optional[str] = field(default=None)
+    wandb_entity: Optional[str] = field(default=None)
     train_file_path: Optional[str] = field(default='simplescaling/s1K_tokenized')
     cache_dir: Optional[str] = field(default=None)
     dagger: bool = field(default=False)
 
     def __post_init__(self):
-        os.environ['WANDB_PROJECT'] = self.wandb_project
-        os.environ['WANDB_ENTITY'] = self.wandb_entity
+        if self.wandb_project:
+            os.environ['WANDB_PROJECT'] = self.wandb_project
+        if self.wandb_entity:
+            os.environ['WANDB_ENTITY'] = self.wandb_entity
 
 def train():
     # parsing input

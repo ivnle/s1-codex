@@ -14,6 +14,8 @@ max_steps=-1
 gpu_count=1
 push_to_hub=false
 cache_dir="/trunk/model-hub" # Define the cache directory
+wandb_project="my_sft_project" # Define your W&B project
+wandb_entity="my_wandb_username"  # Define your W&B entity (username or team)
 
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \
@@ -25,6 +27,8 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --train_file_path="simplescaling/s1K_tokenized" \
     --model_name=${base_model} \
     --cache_dir=${cache_dir} \
+    --wandb_project=${wandb_project} \
+    --wandb_entity=${wandb_entity} \
     --warmup_ratio=0.05 \
     --fsdp="full_shard auto_wrap" \
     --fsdp_config="train/fsdp_config_qwen.json" \

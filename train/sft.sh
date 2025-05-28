@@ -2,20 +2,20 @@
 # {'train_runtime': 5268.8407, 'train_samples_per_second': 0.949, 'train_steps_per_second': 0.119, 'train_loss': 0.1172730620391667, 'epoch': 5.0}
 uid="$(date +%Y%m%d_%H%M%S)"
 # base_model="Qwen/Qwen2.5-0.5B-Instruct"
-base_model="Qwen/Qwen2.5-1.5B-Instruct"
+# base_model="Qwen/Qwen2.5-1.5B-Instruct"
 # base_model="Qwen/Qwen2.5-3B-Instruct"
-# base_model="Qwen/Qwen2.5-7B-Instruct"
+base_model="Qwen/Qwen2.5-7B-Instruct"
 # base_model="Qwen/Qwen2.5-14B-Instruct"
 # base_model="Qwen/Qwen2.5-32B-Instruct"
 lr=1e-5
 min_lr=0
-epochs=5
+epochs=1
 weight_decay=1e-4 # -> the same training pipe as slurm_training
 micro_batch_size=1 # -> batch_size will be 16 if 16 gpus
 gradient_accumulation_steps=1 # requires more GPU memory
 max_steps=-1
 # gpu_count=$(nvidia-smi -L | wc -l)
-gpu_count=4
+gpu_count=6
 push_to_hub=true
 cache_dir="/trunk/model-hub" # Define the cache directory
 wandb_project="s1-codex" # Define your W&B project
@@ -23,13 +23,15 @@ wandb_entity="ivnle"  # Define your W&B entity (username or team)
 logging_steps=10
 # block_size=32768
 # block_size=2048
-block_size=4096
+# block_size=4096
+block_size=6144
+# block_size=8192
 
 # Dataset statistics logging
 log_dataset_stats=true      # set to false to skip stats computation
 
 # LORA parameters
-use_lora=false # Set to true to enable LORA
+use_lora=true # Set to true to enable LORA
 lora_r=8
 lora_alpha=16
 lora_dropout=0.05

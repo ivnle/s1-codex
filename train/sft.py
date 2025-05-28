@@ -136,12 +136,14 @@ def train():
             mean_len,
         )
 
-        # ---------- NEW: histogram for train split ----------
+        # ---------- NEW: CDF for train split ----------
         # 10 automatically-chosen bins; change "auto" or bin count as desired.
         train_hist_counts, train_hist_edges = np.histogram(train_lengths, bins="auto")
-        logging.info("Train token-length histogram (bin_start – bin_end : count)")
-        for left, right, c in zip(train_hist_edges[:-1], train_hist_edges[1:], train_hist_counts):
-            logging.info("  %5d – %5d : %d", int(left), int(right), int(c))
+        cum_counts = np.cumsum(train_hist_counts)
+        cum_frac   = cum_counts / cum_counts[-1]
+        logging.info("Train token-length CDF (≤ bin_end : cum_count  cum_pct)")
+        for right_edge, cum_ct, cum_p in zip(train_hist_edges[1:], cum_counts, cum_frac):
+            logging.info("  ≤ %6d : %7d  (%.2f%%)", int(right_edge), int(cum_ct), 100 * cum_p)
 
         if "test" in dataset:
             test_lengths = [ _example_len(ex) for ex in dataset["test"] ]
@@ -161,11 +163,13 @@ def train():
                 test_mean_len,
             )
 
-            # ---------- NEW: histogram for test split ----------
+            # ---------- NEW: CDF for test split ----------
             test_hist_counts, test_hist_edges = np.histogram(test_lengths, bins="auto")
-            logging.info("Test token-length histogram (bin_start – bin_end : count)")
-            for left, right, c in zip(test_hist_edges[:-1], test_hist_edges[1:], test_hist_counts):
-                logging.info("  %5d – %5d : %d", int(left), int(right), int(c))
+            test_cum_counts = np.cumsum(test_hist_counts)
+            test_cum_frac   = test_cum_counts / test_cum_counts[-1]
+            logging.info("Test token-length CDF (≤ bin_end : cum_count  cum_pct)")
+            for right_edge, cum_ct, cum_p in zip(test_hist_edges[1:], test_cum_counts, test_cum_frac):
+                logging.info("  ≤ %6d : %7d  (%.2f%%)", int(right_edge), int(cum_ct), 100 * cum_p)
 
     peft_config = None
     if config.use_lora:

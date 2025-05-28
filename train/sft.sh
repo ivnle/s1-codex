@@ -25,6 +25,9 @@ logging_steps=10
 # block_size=2048
 block_size=4096
 
+# Dataset statistics logging
+log_dataset_stats=true      # set to false to skip stats computation
+
 # LORA parameters
 use_lora=false # Set to true to enable LORA
 lora_r=8
@@ -63,7 +66,8 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --use_lora=${use_lora} \
     --lora_r=${lora_r} \
     --lora_alpha=${lora_alpha} \
-    --lora_dropout=${lora_dropout}
+    --lora_dropout=${lora_dropout} \
+    --log_dataset_stats=${log_dataset_stats}
     # To specify target modules from shell, uncomment and add:
     # --lora_target_modules="${lora_target_modules_str}" \
     # --gradient_checkpointing=True \ Enable gradient checkpointing for efficient memory usage with 8 H100 GPUs.

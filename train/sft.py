@@ -5,7 +5,21 @@ import itertools
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 import logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# ----------------------------------------------------------------------
+# Helpers to know if we are the global-rank-0 / main process.
+# Works with torchrun (env RANK) and also when not in distributed mode.
+# ----------------------------------------------------------------------
+def _is_main_process() -> bool:
+    rank = os.environ.get("RANK")
+    return rank is None or int(rank) == 0
+
+log_level = logging.INFO if _is_main_process() else logging.ERROR
+logging.basicConfig(
+    level=log_level,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    force=True,           # overwrite any pre-existing handlers
+)
 from datasets import load_dataset, concatenate_datasets, DatasetDict
 import transformers
 import trl

@@ -9,13 +9,13 @@ base_model="Qwen/Qwen2.5-0.5B-Instruct"
 # base_model="Qwen/Qwen2.5-32B-Instruct"
 lr=1e-5
 min_lr=0
-epochs=1
+epochs=5
 weight_decay=1e-4 # -> the same training pipe as slurm_training
 micro_batch_size=1 # -> batch_size will be 16 if 16 gpus
 gradient_accumulation_steps=1 # requires more GPU memory
 max_steps=-1
 # gpu_count=$(nvidia-smi -L | wc -l)
-gpu_count=2
+gpu_count=6
 push_to_hub=true
 cache_dir="/trunk/model-hub" # Define the cache directory
 wandb_project="s1-codex" # Define your W&B project
@@ -31,7 +31,7 @@ block_size=6144
 log_dataset_stats=true      # set to false to skip stats computation
 
 # LORA parameters
-use_lora=false # Set to true to enable LORA
+use_lora=true # Set to true to enable LORA
 lora_r=8
 lora_alpha=16
 lora_dropout=0.05

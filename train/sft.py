@@ -115,8 +115,9 @@ def train():
     # Optional gradient-checkpointing support (DDP-safe default)
     # ------------------------------------------------------------------
     if getattr(args, "gradient_checkpointing", False):
-        # Default to the non-re-entrant variant unless the user overrides
-        gc_kwargs = args.gradient_checkpointing_kwargs or {"use_reentrant": False}
+        # Default to the re-entrant variant unless the user overrides,
+        # as it's generally more compatible with DDP and PEFT.
+        gc_kwargs = args.gradient_checkpointing_kwargs or {"use_reentrant": True}
         logging.info(f"Enabling gradient checkpointing with kwargs: {gc_kwargs}")
         try:
             model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gc_kwargs)

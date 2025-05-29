@@ -115,7 +115,7 @@ def train():
     if getattr(args, "gradient_checkpointing", False):
         # Safer default: re-entrant = True
         model.gradient_checkpointing_enable(
-            gradient_checkpointing_kwargs={"use_reentrant": True}
+            gradient_checkpointing_kwargs={"use_reentrant": False}
         )
         # Important for GC: disable KV-cache
         if hasattr(model, "config"):
@@ -254,6 +254,10 @@ def train():
         data_collator=collator,
         peft_config=peft_config,
     )
+
+    if torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
+        if hasattr(trainer.model, "_set_static_graph"):   # true for DDP wrappers
+            trainer.model._set_static_graph()
 
     # ─── make embedding output require grad so GC can flow ───
     if getattr(args, "gradient_checkpointing", False) and \

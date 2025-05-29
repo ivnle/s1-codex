@@ -69,12 +69,25 @@ def train():
     parser = transformers.HfArgumentParser((TrainingConfig, trl.SFTConfig))
     config, args = parser.parse_args_into_dataclasses()
     # ------------------------------------------------------------------
-    # Resolve final checkpoint directory (defaults to Trainer's output_dir)
+    # Resolve final model output directory.
+    # config.checkpoint_dir is an optional base path (e.g., /graft3/checkpoints/user/project).
+    # args.output_dir (from SFTConfig) initially holds the default full path (e.g., "ckpts/detailed_run_name").
+    # The final output directory will be config.checkpoint_dir / basename(args.output_dir) if config.checkpoint_dir is set,
+    # otherwise it will be args.output_dir.
     # ------------------------------------------------------------------
-    checkpoint_dir = config.checkpoint_dir or args.output_dir
-    os.makedirs(checkpoint_dir, exist_ok=True)
+    final_model_output_dir: str
+    if config.checkpoint_dir:
+        # A base checkpoint_dir is provided.
+        # The run-specific part is the basename of the initial args.output_dir.
+        run_specific_name = os.path.basename(args.output_dir)
+        final_model_output_dir = os.path.join(config.checkpoint_dir, run_specific_name)
+    else:
+        # No base checkpoint_dir provided, use the initial args.output_dir as is.
+        final_model_output_dir = args.output_dir
+
+    os.makedirs(final_model_output_dir, exist_ok=True)
     # make sure the Trainer itself also points there
-    args.output_dir = checkpoint_dir
+    args.output_dir = final_model_output_dir
     log_config = {**asdict(config), **asdict(args)}
     logging.info(f"Training config: {log_config}")
 

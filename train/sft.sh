@@ -28,6 +28,8 @@ logging_steps=10
 # block_size=6144
 block_size=8192
 
+gradient_checkpointing=true   # set false to disable
+
 # Dataset statistics logging
 log_dataset_stats=true      # set to false to skip stats computation
 
@@ -129,6 +131,10 @@ fi
 # Add checkpoint_dir flag if set
 if [ -n "${checkpoint_dir}" ]; then
   cmd+=(--checkpoint_dir="${checkpoint_dir}")
+fi
+
+if [ "${gradient_checkpointing}" = true ]; then
+  cmd+=(--gradient_checkpointing=True)
 fi
 
 # Launch

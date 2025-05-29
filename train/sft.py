@@ -111,6 +111,19 @@ def train():
             config.model_name, cache_dir=config.cache_dir
         )
 
+    # ------------------------------------------------------------------
+    # Optional gradient-checkpointing support
+    # ------------------------------------------------------------------
+    if getattr(args, "gradient_checkpointing", False):
+        logging.info("Enabling gradient checkpointing")
+        try:
+            model.gradient_checkpointing_enable()
+        except AttributeError:
+            logging.warning("Model does not expose `gradient_checkpointing_enable()`, skipping.")
+        # Best-practice: disable the cache when using gradient-checkpointing
+        if hasattr(model, "config"):
+            model.config.use_cache = False
+
     dataset = load_dataset(config.train_file_path)
 
     # setting up trainer

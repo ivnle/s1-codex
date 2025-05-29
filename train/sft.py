@@ -287,8 +287,8 @@ def train():
 
     logging.info(f"Model parameter dtype: {next(trainer.model.parameters()).dtype}")
     trainer.train()
-    trainer.save_model(output_dir=checkpoint_dir)
-    tokenizer.save_pretrained(checkpoint_dir)
+    trainer.save_model(output_dir=final_model_output_dir)
+    tokenizer.save_pretrained(final_model_output_dir)
     trainer.accelerator.wait_for_everyone()
 
 

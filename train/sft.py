@@ -111,17 +111,6 @@ def train():
             config.model_name, cache_dir=config.cache_dir
         )
 
-    # ─── enable gradient-checkpointing if requested ───
-    if getattr(args, "gradient_checkpointing", False):
-        # Safer default: re-entrant = True
-        model.gradient_checkpointing_enable(
-            gradient_checkpointing_kwargs={"use_reentrant": False}
-        )
-        # Important for GC: disable KV-cache
-        if hasattr(model, "config"):
-            model.config.use_cache = False
-    # ──────────────────────────────────────────────────
-
     dataset = load_dataset(config.train_file_path)
 
     # setting up trainer
@@ -254,6 +243,17 @@ def train():
         data_collator=collator,
         peft_config=peft_config,
     )
+    # ── enable gradient-checkpointing *after* LoRA has wrapped the model ──
+    if getattr(args, "gradient_checkpointing", False):
+        # Works on transformers ≥ 4.31 (old API). use_reentrant=False avoids DDP clash.
+        trainer.model.gradient_checkpointing_enable(use_reentrant=False)
+        trainer.model.config.use_cache = False      # keep KV-cache off
+
+        # Tell DDP the graph is static, required when checkpointing is on
+        if torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
+            if hasattr(trainer.model, "_set_static_graph"):
+                trainer.model._set_static_graph()
+    # ───────────────────────────────────────────────────────────────────────
 
     if torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
         if hasattr(trainer.model, "_set_static_graph"):   # true for DDP wrappers

@@ -119,7 +119,7 @@ def train():
         gc_kwargs = args.gradient_checkpointing_kwargs or {"use_reentrant": False}
         logging.info(f"Enabling gradient checkpointing with kwargs: {gc_kwargs}")
         try:
-            model.gradient_checkpointing_enable(**gc_kwargs)
+            model.gradient_checkpointing_enable()
         except AttributeError:
             logging.warning(
                 "Model does not expose `gradient_checkpointing_enable()`, skipping."

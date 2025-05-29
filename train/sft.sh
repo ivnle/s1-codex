@@ -79,8 +79,8 @@ else
   peft_tag="full"
 fi
 
-# Combine: <params>_<peft>_<backend>_<timestamp>
-repo_name="${param_tag}_${peft_tag}_${dist_backend}_${uid}"
+# Combine: <params>_<peft>_<backend>_bs<block_size>_<timestamp>
+repo_name="${param_tag}_${peft_tag}_${dist_backend}_bs${block_size}_${uid}"
 
 # Final output directory (also becomes HF repo name when push_to_hub=true)
 output_dir="ckpts/${repo_name}"

@@ -255,10 +255,6 @@ def train():
                 trainer.model._set_static_graph()
     # ───────────────────────────────────────────────────────────────────────
 
-    if torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
-        if hasattr(trainer.model, "_set_static_graph"):   # true for DDP wrappers
-            trainer.model._set_static_graph()
-
     # ─── make embedding output require grad so GC can flow ───
     if getattr(args, "gradient_checkpointing", False) and \
        hasattr(trainer.model, "enable_input_require_grads"):

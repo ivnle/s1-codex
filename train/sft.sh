@@ -1,10 +1,10 @@
 # Reference Running: bash train/sft.sh
 # {'train_runtime': 5268.8407, 'train_samples_per_second': 0.949, 'train_steps_per_second': 0.119, 'train_loss': 0.1172730620391667, 'epoch': 5.0}
 uid="$(date +%Y%m%d_%H%M%S)"
-base_model="Qwen/Qwen2.5-0.5B-Instruct"
+# base_model="Qwen/Qwen2.5-0.5B-Instruct"
 # base_model="Qwen/Qwen2.5-1.5B-Instruct"
 # base_model="Qwen/Qwen2.5-3B-Instruct"
-# base_model="Qwen/Qwen2.5-7B-Instruct"
+base_model="Qwen/Qwen2.5-7B-Instruct"
 # base_model="Qwen/Qwen2.5-14B-Instruct"
 # base_model="Qwen/Qwen2.5-32B-Instruct"
 lr=1e-5
@@ -15,17 +15,18 @@ micro_batch_size=1 # -> batch_size will be 16 if 16 gpus
 gradient_accumulation_steps=1 # requires more GPU memory
 max_steps=-1
 # gpu_count=$(nvidia-smi -L | wc -l)
-gpu_count=6
+gpu_count=1
 push_to_hub=true
 cache_dir="/trunk/model-hub" # Define the cache directory
 wandb_project="s1-codex" # Define your W&B project
 wandb_entity="ivnle"  # Define your W&B entity (username or team)
 logging_steps=10
 # block_size=32768
+# block_size=512
 # block_size=2048
 # block_size=4096
-block_size=6144
-# block_size=8192
+# block_size=6144
+block_size=8192
 
 # Dataset statistics logging
 log_dataset_stats=true      # set to false to skip stats computation
@@ -39,7 +40,7 @@ lora_dropout=0.05
 # If lora_target_modules_str is not set or empty, the script will use defaults or try to infer.
 
 # ------------------------ QLoRA parameters ------------------------
-use_qlora=false                  # Set to true to activate 4-bit QLoRA
+use_qlora=true                  # Set to true to activate 4-bit QLoRA
 qlora_compute_dtype="bf16"       # "bf16" or "fp16"
 # If QLoRA is enabled we must also enable LoRA adapters                                   
 if [ "${use_qlora}" = true ]; then
@@ -81,14 +82,14 @@ repo_name="${param_tag}_${peft_tag}_${dist_backend}_${uid}"
 output_dir="ckpts/${repo_name}"
 
 # -------- Optional explicit checkpoint directory --------
-checkpoint_dir=""          # e.g. "my_ckpts/run42" ; leave empty to use default
+checkpoint_dir="/graft3/checkpoints/ivanlee/s1-codex"          # e.g. "my_ckpts/run42" ; leave empty to use default
 
 # If the user requests single-GPU, override world-size
 if [ "${dist_backend}" = "single" ]; then
   gpu_count=1
 fi
 
-cmd=(torchrun --nproc-per-node ${gpu_count} --master_port 12345 train/sft.py \
+cmd=(torchrun --nproc-per-node ${gpu_count} --master_port 12344 train/sft.py \
      --block_size=${block_size} \
      --per_device_train_batch_size=${micro_batch_size} \
      --per_device_eval_batch_size=${micro_batch_size} \

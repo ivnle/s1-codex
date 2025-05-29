@@ -1,8 +1,8 @@
 # Reference Running: bash train/sft.sh
 # {'train_runtime': 5268.8407, 'train_samples_per_second': 0.949, 'train_steps_per_second': 0.119, 'train_loss': 0.1172730620391667, 'epoch': 5.0}
 uid="$(date +%Y%m%d_%H%M%S)"
-base_model="Qwen/Qwen2.5-0.5B-Instruct"
-# base_model="Qwen/Qwen2.5-1.5B-Instruct"
+# base_model="Qwen/Qwen2.5-0.5B-Instruct"
+base_model="Qwen/Qwen2.5-1.5B-Instruct"
 # base_model="Qwen/Qwen2.5-3B-Instruct"
 # base_model="Qwen/Qwen2.5-7B-Instruct"
 # base_model="Qwen/Qwen2.5-14B-Instruct"
@@ -27,10 +27,10 @@ logging_steps=10
 # block_size=1028
 # block_size=2048
 # block_size=4096
-block_size=6144
-# block_size=8192
+# block_size=6144
+block_size=8192
 
-gradient_checkpointing=true   # set false to disable
+gradient_checkpointing=false   # set false to disable
 
 # Dataset statistics logging
 log_dataset_stats=false      # set to false to skip stats computation

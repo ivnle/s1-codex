@@ -112,15 +112,19 @@ def train():
         )
 
     # ------------------------------------------------------------------
-    # Optional gradient-checkpointing support
+    # Optional gradient-checkpointing support (DDP-safe default)
     # ------------------------------------------------------------------
     if getattr(args, "gradient_checkpointing", False):
-        logging.info("Enabling gradient checkpointing")
+        # Default to the non-re-entrant variant unless the user overrides
+        gc_kwargs = args.gradient_checkpointing_kwargs or {"use_reentrant": False}
+        logging.info(f"Enabling gradient checkpointing with kwargs: {gc_kwargs}")
         try:
-            model.gradient_checkpointing_enable()
+            model.gradient_checkpointing_enable(**gc_kwargs)
         except AttributeError:
-            logging.warning("Model does not expose `gradient_checkpointing_enable()`, skipping.")
-        # Best-practice: disable the cache when using gradient-checkpointing
+            logging.warning(
+                "Model does not expose `gradient_checkpointing_enable()`, skipping."
+            )
+        # Best practice: disable KV-cache when checkpointing is enabled
         if hasattr(model, "config"):
             model.config.use_cache = False
 

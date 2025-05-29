@@ -111,23 +111,16 @@ def train():
             config.model_name, cache_dir=config.cache_dir
         )
 
-    # ------------------------------------------------------------------
-    # Optional gradient-checkpointing support (DDP-safe default)
-    # ------------------------------------------------------------------
+    # ─── enable gradient-checkpointing if requested ───
     if getattr(args, "gradient_checkpointing", False):
-        # Default to the re-entrant variant unless the user overrides,
-        # as it's generally more compatible with DDP and PEFT.
-        gc_kwargs = args.gradient_checkpointing_kwargs or {"use_reentrant": True}
-        logging.info(f"Enabling gradient checkpointing with kwargs: {gc_kwargs}")
-        try:
-            model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gc_kwargs)
-        except AttributeError:
-            logging.warning(
-                "Model does not expose `gradient_checkpointing_enable()`, skipping."
-            )
-        # Best practice: disable KV-cache when checkpointing is enabled
+        # Safer default: re-entrant = True
+        model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": True}
+        )
+        # Important for GC: disable KV-cache
         if hasattr(model, "config"):
             model.config.use_cache = False
+    # ──────────────────────────────────────────────────
 
     dataset = load_dataset(config.train_file_path)
 
@@ -261,6 +254,12 @@ def train():
         data_collator=collator,
         peft_config=peft_config,
     )
+
+    # ─── make embedding output require grad so GC can flow ───
+    if getattr(args, "gradient_checkpointing", False) and \
+       hasattr(trainer.model, "enable_input_require_grads"):
+        trainer.model.enable_input_require_grads()
+    # ─────────────────────────────────────────────────────────
 
     # Log trainable parameters
     trainable_params = 0

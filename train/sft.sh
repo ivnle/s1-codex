@@ -2,10 +2,10 @@
 # {'train_runtime': 5268.8407, 'train_samples_per_second': 0.949, 'train_steps_per_second': 0.119, 'train_loss': 0.1172730620391667, 'epoch': 5.0}
 uid="$(date +%Y%m%d_%H%M%S)"
 # base_model="Qwen/Qwen2.5-0.5B-Instruct"
-base_model="Qwen/Qwen2.5-1.5B-Instruct"
+# base_model="Qwen/Qwen2.5-1.5B-Instruct"
 # base_model="Qwen/Qwen2.5-3B-Instruct"
 # base_model="Qwen/Qwen2.5-7B-Instruct"
-# base_model="Qwen/Qwen2.5-14B-Instruct"
+base_model="Qwen/Qwen2.5-14B-Instruct"
 # base_model="Qwen/Qwen2.5-32B-Instruct"
 lr=1e-5
 min_lr=0
@@ -30,7 +30,7 @@ logging_steps=10
 # block_size=6144
 block_size=8192
 
-gradient_checkpointing=false   # set false to disable
+gradient_checkpointing=true   # set false to disable
 
 # Dataset statistics logging
 log_dataset_stats=false      # set to false to skip stats computation
@@ -83,7 +83,7 @@ fi
 repo_name="${param_tag}_${peft_tag}_${dist_backend}_bs${block_size}_${uid}"
 
 # Final output directory (also becomes HF repo name when push_to_hub=true)
-output_dir="ckpts/${repo_name}"
+output_dir="${repo_name}"
 
 # -------- Optional explicit checkpoint directory --------
 checkpoint_dir="/graft3/checkpoints/ivanlee/s1-codex"          # e.g. "my_ckpts/run42" ; leave empty to use default

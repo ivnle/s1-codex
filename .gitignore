@@ -2,3 +2,5 @@ ckpts/
 
 wandb/
 
+.aider*
+eval/qwen/
